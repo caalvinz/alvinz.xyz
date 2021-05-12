@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"alvinz.xyz","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="为什么关注静态网站&#x2F;静态内容 使用非常广泛，可以说它无处不在，甚至是你应用的大部分。  静态网站，仅使用静态文件（如 HTML、CSS、JavaScript、图像和视频），并且不需要服务器或服务器端处理。 在实际应用中，我们会有这样的静态内容：  静态博客（例如hexo） 静态内容（例如wordpress发布的文本、图片、视频） 系统缓存内容（例如电子商务系统中的商品图片，根据不同场景缩放了的缓">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AWS案例：静态网站">
+<meta property="og:url" content="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/index.html">
+<meta property="og:site_name" content="alvin.z | THINK &amp; IMAGINE">
+<meta property="og:description" content="为什么关注静态网站&#x2F;静态内容 使用非常广泛，可以说它无处不在，甚至是你应用的大部分。  静态网站，仅使用静态文件（如 HTML、CSS、JavaScript、图像和视频），并且不需要服务器或服务器端处理。 在实际应用中，我们会有这样的静态内容：  静态博客（例如hexo） 静态内容（例如wordpress发布的文本、图片、视频） 系统缓存内容（例如电子商务系统中的商品图片，根据不同场景缩放了的缓">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/ZANGMedia_Post_HowToWriteGoodContent_20170824.jpg">
+<meta property="og:image" content="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/image-20201208091207228.png">
+<meta property="og:image" content="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/image-20201208092212228.png">
+<meta property="og:image" content="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/image-20201208092712929.png">
+<meta property="og:image" content="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/image-20201208094523600.png">
+<meta property="og:image" content="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/image-20201208093309955.png">
+<meta property="og:image" content="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/4-v-2.png">
+<meta property="article:published_time" content="2020-11-17T14:34:07.000Z">
+<meta property="article:modified_time" content="2021-02-24T14:42:23.588Z">
+<meta property="article:author" content="alvin.z">
+<meta property="article:tag" content="AWS, 案例, 实战, 观点, S3, Route53">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/ZANGMedia_Post_HowToWriteGoodContent_20170824.jpg">
+
+<link rel="canonical" href="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>AWS案例：静态网站 | alvin.z | THINK & IMAGINE</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">alvin.z | THINK & IMAGINE</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">果 效 由 心 发 出</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://alvinz.xyz/2020/11/17/AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="alvin.z">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="alvin.z | THINK & IMAGINE">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          AWS案例：静态网站
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-11-17 09:34:07" itemprop="dateCreated datePublished" datetime="2020-11-17T09:34:07-05:00">2020-11-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-02-24 09:42:23" itemprop="dateModified" datetime="2021-02-24T09:42:23-05:00">2021-02-24</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="./AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/ZANGMedia_Post_HowToWriteGoodContent_20170824.jpg" alt="A Guide to Writing Effective Website Content | ZANG Media"></p>
+<h1 id="为什么关注静态网站-静态内容"><a href="#为什么关注静态网站-静态内容" class="headerlink" title="为什么关注静态网站/静态内容"></a>为什么关注静态网站/静态内容</h1><blockquote>
+<p>使用非常广泛，可以说它无处不在，甚至是你应用的大部分。</p>
+</blockquote>
+<p>静态网站，仅使用静态文件（如 HTML、CSS、JavaScript、图像和视频），并且不需要服务器或服务器端处理。</p>
+<p>在实际应用中，我们会有这样的静态内容：</p>
+<ol>
+<li>静态博客（例如hexo）</li>
+<li>静态内容（例如wordpress发布的文本、图片、视频）</li>
+<li>系统缓存内容（例如电子商务系统中的商品图片，根据不同场景缩放了的缓存图片）</li>
+<li>SPA应用程序</li>
+<li>缓存资料</li>
+<li>…</li>
+</ol>
+<p>优势：功能强大且价格低廉</p>
+<h1 id="使用到的AWS服务"><a href="#使用到的AWS服务" class="headerlink" title="使用到的AWS服务"></a>使用到的AWS服务</h1><ul>
+<li>S3<ul>
+<li>存储静态内容</li>
+<li>可以配置为托管静态网站</li>
+</ul>
+</li>
+<li>CloudFront<ul>
+<li>CDN（内容分发网络）</li>
+<li>使您的网站加载速度更快</li>
+</ul>
+</li>
+<li>Certificate Manager<ul>
+<li>提供免费的 HTTPS 证书</li>
+</ul>
+</li>
+<li>Route 53<ul>
+<li>提供域名服务</li>
+</ul>
+</li>
+</ul>
+<h1 id="实战步骤"><a href="#实战步骤" class="headerlink" title="实战步骤"></a>实战步骤</h1><p>本文章以host静态网站为例。</p>
+<ul>
+<li>Admin管理员：管理和更新静态资源</li>
+<li>Visitor访问者：浏览网站内容</li>
+</ul>
+<p><img src="./AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/image-20201208091207228.png" alt="image-20201208091207228"></p>
+<h2 id="第一步：确定域名，并以域名建立S3-Bucket"><a href="#第一步：确定域名，并以域名建立S3-Bucket" class="headerlink" title="第一步：确定域名，并以域名建立S3 Bucket"></a>第一步：确定域名，并以域名建立S3 Bucket</h2><p>登录AWS Console，建立两个同名bucket，一个yourdomain，另一个<a href="http://www.yourdomain（例如：alvinz.xyz）">www.yourdomain（例如：alvinz.xyz）</a><br><img src="./AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/image-20201208092212228.png" alt="image-20201208092212228"></p>
+<p>并进行如下的设置</p>
+<h3 id="1-启用static-website-hosting"><a href="#1-启用static-website-hosting" class="headerlink" title="1. 启用static website hosting"></a>1. 启用static website hosting</h3><p>进入Bucket-&gt;Properties-&gt;Static Website Hosting</p>
+<p><img src="./AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/image-20201208092712929.png" alt="image-20201208092712929"></p>
+<p>保存后，你将可以看到Bucket Website Endpoint（稍后的设置会用到）<br><img src="./AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/image-20201208094523600.png" alt="image-20201208094523600"></p>
+<h3 id="2-设置访问权限为publish"><a href="#2-设置访问权限为publish" class="headerlink" title="2. 设置访问权限为publish"></a>2. 设置访问权限为publish</h3><p>进入Bucket-&gt;Permissions</p>
+<p><img src="./AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/image-20201208093309955.png" alt="image-20201208093309955"></p>
+<p>并在Bucket Policy进行如下设置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;Version&quot;: &quot;2008-10-17&quot;,</span><br><span class="line">    &quot;Statement&quot;: [</span><br><span class="line">        &#123;</span><br><span class="line">            &quot;Sid&quot;: &quot;AllowPublicRead&quot;,</span><br><span class="line">            &quot;Effect&quot;: &quot;Allow&quot;,</span><br><span class="line">            &quot;Principal&quot;: &#123;</span><br><span class="line">                &quot;AWS&quot;: &quot;*&quot;</span><br><span class="line">            &#125;,</span><br><span class="line">            &quot;Action&quot;: &quot;s3:GetObject&quot;,</span><br><span class="line">            &quot;Resource&quot;: &quot;arn:aws:s3:::你的Bucket名字（例如alvinz.xyz）&#x2F;*&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="第二步：上传静态内容到S3"><a href="#第二步：上传静态内容到S3" class="headerlink" title="第二步：上传静态内容到S3"></a>第二步：上传静态内容到S3</h2><p>可以使用AWS console在网站上上传，也可以使用AWS CLI上传，详细请浏览另外一篇关于S3的文章。</p>
+<p>至此，你就可以通过Bucket Website Endpoint浏览网站了。</p>
+<h2 id="第三步：设置域名Route-53"><a href="#第三步：设置域名Route-53" class="headerlink" title="第三步：设置域名Route 53"></a>第三步：设置域名Route 53</h2><h2 id="第四步：设置cloudfront和SSL"><a href="#第四步：设置cloudfront和SSL" class="headerlink" title="第四步：设置cloudfront和SSL"></a>第四步：设置cloudfront和SSL</h2><h1 id="进阶：如何安全保护静态资源"><a href="#进阶：如何安全保护静态资源" class="headerlink" title="进阶：如何安全保护静态资源"></a>进阶：如何安全保护静态资源</h1><p>由 HTTPS 和其他安全标头保护 – 此解决方案在 AWS Certificate Manager (ACM) 中创建 SSL/TLS 证书，并将其附加到 CloudFront 分配。此证书使分配能够使用 HTTPS 安全地为您的域名网站提供服务。</p>
+<p>此解决方案还使用 Lambda@Edge 向每个服务器响应添加安全标头。安全标头是 Web 服务器响应中的一组标头，它们告诉 Web 浏览器采取额外的安全预防措施。有关更多信息，请参阅此博客文章：使用 Lambda@Edge 和 Amazon CloudFront 添加 HTTP 安全标头。</p>
+<p>通过 Internet 分发内容的企业经常会希望限制对文档、商业数据、媒体流或其他内容的访问权限，从而仅限付费客户等选定的用户可以请求这些内容。通过使用 CloudFront，我们可以设置地理限制、签名 URL、签名 Cookie 等额外的访问限制，从而根据不同的条件进一步限制对内容的访问。</p>
+<p>CloudFront 的另一个安全功能是源访问身份 (OAI)，此功能会将 S3 存储桶及其内容限制为仅限 CloudFront 以及它所执行的操作可以访问。此博文中的 CloudFormation 模板包含了 OAI，以帮助确保您的内容得到保护和限制。</p>
+<p><img src="AWS%E6%A1%88%E4%BE%8B%EF%BC%9A%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99/4-v-2.png" alt="img"></p>
+<p>CloudFront 包含额外的保护功能，防止恶意利用漏洞。为提供这些保护，CloudFront 集成了 Web 应用程序防火墙 <a target="_blank" rel="noopener" href="https://aws.amazon.com/waf/">AWS WAF</a>（它可帮助保护 Web 应用程序，防止常见的 Web 漏洞利用行为）以及 <a target="_blank" rel="noopener" href="https://aws.amazon.com/shield/">AWS Shield</a>（适用于在 AWS 上运行的 Web 应用程序的托管 DDoS 防护服务）。AWS WAF 可让您按自己指定的条件控制对内容的访问，例如按 IP 地址或内容查询的查询字符串值。然后 CloudFront 会在满足条件时返回请求的内容，或返回一个 HTTP 403 状态代码（禁止访问）。所有 CloudFront 客户都可免费享受 AWS Shield Standard 提供的自动防护。如果客户希望获得更深入的见解，增强风险化解能力，以及面对 DDoS 攻击时的成本保护，则可以使用 <a target="_blank" rel="noopener" href="https://aws.amazon.com/shield/tiers/">AWS Shield Advanced</a>。</p>
+<p>关于安全保护的更多内容请浏览</p>
+<h2 id="限制对内容的访问"><a href="#限制对内容的访问" class="headerlink" title="限制对内容的访问"></a>限制对内容的访问</h2><p>许多通过互联网分发内容的公司都希望限制对文档、业务数据、流媒体或面向一部分用户的内容的访问。要使用 Amazon CloudFront 安全地提供此内容，您可执行以下一个或多个操作：</p>
+<ul>
+<li><p><strong>使用签名 URL 或 Cookie</strong></p>
+<p>您通过 CloudFront，使用签名 URL 或签名 Cookie 来提供此私有内容，从而限制面向选定用户（例如，付费用户）的内容的访问。有关更多信息，请参阅<a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/zh_cn/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html">使用签名 URL 和已签名的 Cookie 提供私有内容</a>。</p>
+</li>
+<li><p><strong>限制对 Amazon S3 存储桶中内容的访问</strong></p>
+<p>例如，如果通过使用 CloudFront 签名 URL 或签名 Cookie 来限制对内容的访问，您还会希望人员无法使用文件的直接 URL 查看文件。而是希望他们只能通过使用 CloudFront URL 访问文件，这样您的保护才会发挥作用。如果您使用 Amazon S3 存储桶作为 CloudFront 分配的源，您可以设置源访问身份 (OAI) 来管理对内容的直接访问。源访问身份是一种特殊的 CloudFront 用户身份，您可以将其与您的分配关联，这样就可以保护您的全部或部分 Amazon S3 内容。有关如何配置此功能的详细信息，请参阅<a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/zh_cn/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html">使用源访问身份限制对 Amazon S3 内容的访问</a>。</p>
+</li>
+<li><p><strong>使用 AWS WAF Web ACL</strong></p>
+<p>您可以使用 Web 应用程序防火墙服务 AWS WAF 创建 Web 访问控制列表 (Web ACL) 来限制对内容的访问。根据指定的条件 (如请求源自的 IP 地址或查询字符串的值)，CloudFront 会使用所请求的内容或使用 HTTP 状态代码 403 (Forbidden) 来响应请求。有关更多信息，请参阅 <a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/zh_cn/AmazonCloudFront/latest/DeveloperGuide/distribution-web-awswaf.html">使用 AWS WAF 控制对您的内容的访问</a>。</p>
+</li>
+<li><p><strong>使用地理限制</strong></p>
+<p>您可以使用<em>地理限制</em> （也称为<em>地理阻止</em> ）禁止特定地理位置的用户访问您通过 CloudFront 分配提供的内容。配置地理限制时有多个选项可供选择。有关更多信息，请参阅 <a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/zh_cn/AmazonCloudFront/latest/DeveloperGuide/georestrictions.html">限制您的内容的地理分配</a>。</p>
+</li>
+</ul>
+<h1 id="进阶：让流程畅顺起来"><a href="#进阶：让流程畅顺起来" class="headerlink" title="进阶：让流程畅顺起来"></a>进阶：让流程畅顺起来</h1><p>使用 AWS CloudFormation 进行配置和部署 – 此解决方案使用 AWS CloudFormation 模板来设置所有组件，因此，您可以更多地关注网站的内容，而更少地关注配置组件。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AWS-%E6%A1%88%E4%BE%8B-%E5%AE%9E%E6%88%98-%E8%A7%82%E7%82%B9-S3-Route53/" rel="tag"># AWS, 案例, 实战, 观点, S3, Route53</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/11/01/%E4%BD%BF%E7%94%A8docsify%E6%9E%84%E5%BB%BA%E4%B8%93%E4%B8%9A%E6%96%87%E6%A1%A3/" rel="prev" title="使用docsify构建专业文档">
+      <i class="fa fa-chevron-left"></i> 使用docsify构建专业文档
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/12/01/%E4%BC%81%E4%B8%9A%E4%B8%8A%E4%BA%91%EF%BC%9A%E4%BD%BF%E7%94%A8AWS%20S3/" rel="next" title="企业上云：使用AWS S3">
+      企业上云：使用AWS S3 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%85%B3%E6%B3%A8%E9%9D%99%E6%80%81%E7%BD%91%E7%AB%99-%E9%9D%99%E6%80%81%E5%86%85%E5%AE%B9"><span class="nav-number">1.</span> <span class="nav-text">为什么关注静态网站&#x2F;静态内容</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%88%B0%E7%9A%84AWS%E6%9C%8D%E5%8A%A1"><span class="nav-number">2.</span> <span class="nav-text">使用到的AWS服务</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E6%AD%A5%E9%AA%A4"><span class="nav-number">3.</span> <span class="nav-text">实战步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%EF%BC%9A%E7%A1%AE%E5%AE%9A%E5%9F%9F%E5%90%8D%EF%BC%8C%E5%B9%B6%E4%BB%A5%E5%9F%9F%E5%90%8D%E5%BB%BA%E7%AB%8BS3-Bucket"><span class="nav-number">3.1.</span> <span class="nav-text">第一步：确定域名，并以域名建立S3 Bucket</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E5%90%AF%E7%94%A8static-website-hosting"><span class="nav-number">3.1.1.</span> <span class="nav-text">1. 启用static website hosting</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E8%AE%BE%E7%BD%AE%E8%AE%BF%E9%97%AE%E6%9D%83%E9%99%90%E4%B8%BApublish"><span class="nav-number">3.1.2.</span> <span class="nav-text">2. 设置访问权限为publish</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%EF%BC%9A%E4%B8%8A%E4%BC%A0%E9%9D%99%E6%80%81%E5%86%85%E5%AE%B9%E5%88%B0S3"><span class="nav-number">3.2.</span> <span class="nav-text">第二步：上传静态内容到S3</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AD%A5%EF%BC%9A%E8%AE%BE%E7%BD%AE%E5%9F%9F%E5%90%8DRoute-53"><span class="nav-number">3.3.</span> <span class="nav-text">第三步：设置域名Route 53</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E5%9B%9B%E6%AD%A5%EF%BC%9A%E8%AE%BE%E7%BD%AEcloudfront%E5%92%8CSSL"><span class="nav-number">3.4.</span> <span class="nav-text">第四步：设置cloudfront和SSL</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E9%98%B6%EF%BC%9A%E5%A6%82%E4%BD%95%E5%AE%89%E5%85%A8%E4%BF%9D%E6%8A%A4%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90"><span class="nav-number">4.</span> <span class="nav-text">进阶：如何安全保护静态资源</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%90%E5%88%B6%E5%AF%B9%E5%86%85%E5%AE%B9%E7%9A%84%E8%AE%BF%E9%97%AE"><span class="nav-number">4.1.</span> <span class="nav-text">限制对内容的访问</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E9%98%B6%EF%BC%9A%E8%AE%A9%E6%B5%81%E7%A8%8B%E7%95%85%E9%A1%BA%E8%B5%B7%E6%9D%A5"><span class="nav-number">5.</span> <span class="nav-text">进阶：让流程畅顺起来</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">alvin.z</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">alvin.z</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
